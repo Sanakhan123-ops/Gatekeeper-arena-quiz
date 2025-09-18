@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> The GateKeeper Arena</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        .question-enter {
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .progress-bar {
+            transition: width 0.3s ease-in-out;
+        }
+        
+        .option-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .correct-answer {
+            background: linear-gradient(135deg, #10b981, #059669);
+            animation: correctPulse 0.6s ease-out;
+        }
+        
+        .wrong-answer {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            animation: wrongShake 0.6s ease-out;
+        }
+        
+        @keyframes correctPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes wrongShake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700 min-h-screen">
+    <!-- Start Screen -->
+    <div id="startScreen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center">
+            <div class="mb-6">
+                <div class="w-20 h-20 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span class="text-3xl">🧠</span>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">GateKeeper Arena</h1>
+                <p class="text-gray-600">Enter your details to start the quiz!</p>
+            </div>
+            
+            <div class="space-y-4 mb-8">
+                <div>
+                    <input type="text" id="participantName" placeholder="Your Name" class="w-full p-3 bg-gray-50 rounded-lg border border-gray-200 focus:outline-none focus:border-purple-500 text-gray-700" required>
+                </div>
+                <div>
+                    <input type="email" id="participantEmail" placeholder="Your Email ID" class="w-full p-3 bg-gray-50 rounded-lg border border-gray-200 focus:outline-none focus:border-purple-500 text-gray-700" required>
+                </div>
+            </div>
+            
+            <button onclick="startQuiz()" class="w-full bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold py-4 px-6 rounded-xl hover:from-purple-600 hover:to-blue-600 transform hover:scale-105 transition-all duration-200 shadow-lg">
+                Start Quiz
+            </button>
+        </div>
+    </div>
+
+    <!-- Quiz Screen -->
+    <div id="quizScreen" class="hidden min-h-screen p-4">
+        <div class="max-w-4xl mx-auto">
+            <!-- Progress Bar -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <span class="text-sm font-medium text-gray-600">Question <span id="currentQuestion">1</span> of <span id="totalQuestionsDisplay"></span></span>
+                    <span class="text-sm font-medium text-gray-600">Time Left: <span id="quizTimerDisplay">10:00</span></span>
+                    <span class="text-sm font-medium text-gray-600">Score: <span id="currentScore">0</span></span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-3">
+                    <div id="progressBar" class="progress-bar bg-gradient-to-r from-purple-500 to-blue-500 h-3 rounded-full" style="width: 20%"></div>
+                </div>
+            </div>
+
+            <!-- Question Card -->
+            <div class="bg-white rounded-2xl shadow-lg p-8">
+                <div id="questionContainer" class="question-enter">
+                    <!-- Image display for the first question -->
+                    <div id="image-display-container" class="flex justify-center mb-8"></div>
+                    <div id="video-display-container" class="flex justify-center mb-8 hidden">
+                        <video id="questionVideo" controls class="max-h-96 w-auto rounded-md shadow-lg">
+                            <source src="" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>
+                    <div id="code-display-container" class="flex justify-center mb-8 p-4 bg-gray-100 rounded-lg shadow-inner hidden">
+                        <pre><code id="codeSnippet" class="language-c text-sm"></code></pre>
+                    </div>
+                    <div id="audio-display-container" class="flex justify-center mb-8 hidden">
+                        <audio id="questionAudio" controls class="w-full max-w-md">
+                            <source src="" type="audio/mp4">
+                            Your browser does not support the audio element.
+                        </audio>
+                    </div>
+                    
+                    <h2 id="questionText" class="text-2xl font-bold text-gray-800 mb-8 leading-relaxed"></h2>
+                    
+                    <div id="answerInputContainer" class="space-y-4 mb-4">
+                        <input type="text" id="userAnswer" class="w-full p-4 text-lg bg-gray-50 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:outline-none transition-all duration-200 text-gray-700" placeholder="Type your answer here..." onkeypress="handleKeyPress(event)">
+                        <button id="submitAnswerButton" onclick="submitAnswer()" class="w-full bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold py-3 px-8 rounded-xl hover:from-purple-600 hover:to-blue-600 transform hover:scale-105 transition-all duration-200 shadow-lg">
+                            Submit Answer
+                        </button>
+                    </div>
+                    <div id="feedbackContainer" class="mb-4 text-lg font-semibold text-center hidden">
+                        <span id="feedbackText"></span>
+                    </div>
+                    
+                    <div id="nextButtonContainer" class="hidden mt-8 text-center">
+                        <button onclick="nextQuestion()" class="bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold py-3 px-8 rounded-xl hover:from-green-600 hover:to-emerald-600 transform hover:scale-105 transition-all duration-200 shadow-lg">
+                            Next Question
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Screen -->
+    <div id="resultsScreen" class="hidden min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center">
+            <div class="mb-6">
+                <div id="resultIcon" class="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <!-- Icon will be set by JavaScript -->
+                </div>
+                <h1 id="resultTitle" class="text-3xl font-bold text-gray-800 mb-2"></h1>
+                <p id="resultMessage" class="text-gray-600 mb-6"></p>
+            </div>
+            
+            <div class="bg-gray-50 rounded-2xl p-6 mb-8">
+                <div class="text-4xl font-bold text-purple-600 mb-2">
+                    <span id="finalScore">0</span>/<span id="totalQuestionsResult"></span>
+                </div>
+                <div class="text-gray-600">Final Score</div>
+            </div>
+            
+            <div class="space-y-3">
+                <button onclick="restartQuiz()" class="w-full bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold py-4 px-6 rounded-xl hover:from-purple-600 hover:to-blue-600 transform hover:scale-105 transition-all duration-200 shadow-lg">
+                    Try Again
+                </button>
+                <button onclick="shareResults()" class="w-full bg-gray-100 text-gray-700 font-semibold py-4 px-6 rounded-xl hover:bg-gray-200 transition-all duration-200">
+                    Share Results
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            {
+                question: "Select the odd one out in the given images.",
+                options: ["iPhone", "Watch", "Mobile Phone", "C-Type Charger", "Printer", "Bag"],
+                correct: "Bag",
+                image: "/public/image.png"
+            },
+            {
+                question: "BUY 1 GET 1 FREE\" PIZZAS ON PICAPOOL ARE LISTED AT 700. A REGULAR PIZZA COSTS 450. YOU AND A FRIEND SPLIT THE OFFER. WHAT\'S YOUR EFFECTIVE SAVINGS PER PERSON?",
+                options: [],
+                correct: "100",
+                image: "/public/Pizza_Question.jpg"
+            },
+            {
+                question: "What concepts are explained in the video for effective studies?",
+                options: [],
+                correct: "pomodoro technique and active recall",
+                video: "/Video_Question.mp4"
+            },
+            {
+                question: "Which instagram feature is represented by this image?",
+                options: [],
+                correct: "Carousel Post",
+                image: "/public/insta_Question.jpg"
+            },
+            {
+                question: "2 ** (3 ** 2) = 2 ** 9 =?",
+                options: [],
+                correct: "512"
+            },
+            {
+                question: "Trace the output of Following C Code",
+                code: `#include <stdio.h>
+
+int main() {
+    int x = 5;
+    int y = x++ + ++x + --x + x--;
+    printf("%d\n", y);
+    return 0;
+}`,
+                options: [],
+                correct: "24"
+            },
+            {
+                question: "I connect two, or even more,\nI’m the pathway to the data’s core.\nWithout me, information can’t flow,\nI’m used in memory, as you know.",
+                options: [],
+                correct: "pointer"
+            },
+            {
+                question: `A man comes to a door 🚪 with a secret code.\nThe guard says “Five”, the man replies “4” and is let in.\nThe second man hears “Six”, replies “3\" and is let in.\nThe third man hears “Four”, replies “4” and is let in.\nNow you come.\nThe guard says “Eight”.\nWhat should you say to get in?`,
+                options: [],
+                correct: "five"
+            },
+            {
+                question: "Pointing to a man 👨, A says, \"He is the son of my grandfather's only son.\" How is A related to the man 🧑‍🤝‍🧑?",
+                options: [],
+                correct: "brother"
+            },
+            {
+                question: "What is the chemical symbol for gold?",
+                options: [],
+                correct: "Au"
+            },
+            {
+                question: "In SQL(Structured Query Language) Which Command is used to permanently remove a table?",
+                options: [],
+                correct: "DROP"
+            },
+            {
+                question: "What is the Full Form of URL?",
+                options: [],
+                correct: "Uniform Resource Locator"
+            },
+            {
+                question: "Study of Ancient Society is called?",
+                options: [],
+                correct: "Anthropology"
+            },
+            {
+                question: "Write the Spelling of Given Word",
+                options: [],
+                audio: "/public/Audio_Question.mp4",
+                correct: "treacherous"
+            },
+            {
+                question: "The sequence is 1, 2, 3, 4, 5, 6, 7, 8, 9, __. What number should come next?",
+                options: [],
+                correct: "10"
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        
+        let quizTimer; // For the overall quiz timer
+        const TOTAL_QUIZ_TIME = 10 * 60; // 10 minutes in seconds
+        let quizTimeLeft = TOTAL_QUIZ_TIME;
+        
+        let participantName = '';
+        let participantEmail = '';
+        let quizStartTime; // New variable to store quiz start time
+
+        // Fisher-Yates (Knuth) shuffle algorithm
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]]; // Swap elements
+            }
+        }
+
+        function startQuiz() {
+            participantName = document.getElementById('participantName').value.trim();
+            participantEmail = document.getElementById('participantEmail').value.trim();
+
+            if (!participantName || !participantEmail) {
+                alert('Please enter your name and email to start the quiz.');
+                return;
+            }
+
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('quizScreen').classList.remove('hidden');
+            quizTimeLeft = TOTAL_QUIZ_TIME; // Reset timer
+            shuffleArray(questions); // Shuffle questions before starting the quiz
+            startQuizTimer(); // Start the overall quiz timer
+            quizStartTime = Date.now(); // Record the start time
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const question = questions[currentQuestionIndex];
+            document.getElementById('questionText').textContent = question.question || question.questionText;
+            document.getElementById('currentQuestion').textContent = currentQuestionIndex + 1;
+            document.getElementById('currentScore').textContent = score;
+            document.getElementById('totalQuestionsDisplay').textContent = questions.length;
+            
+            const progressPercent = ((currentQuestionIndex + 1) / questions.length) * 100;
+            document.getElementById('progressBar').style.width = progressPercent + '%';
+
+            const imageDisplayContainer = document.getElementById('image-display-container');
+            const videoDisplayContainer = document.getElementById('video-display-container');
+            const questionVideo = document.getElementById('questionVideo');
+            const codeDisplayContainer = document.getElementById('code-display-container');
+            const audioDisplayContainer = document.getElementById('audio-display-container');
+            const questionAudio = document.getElementById('questionAudio');
+            
+            imageDisplayContainer.innerHTML = ''; // Clear images for all questions initially
+            codeDisplayContainer.classList.add('hidden'); // Hide code display for all questions initially
+            audioDisplayContainer.classList.add('hidden'); // Hide audio display for all questions initially
+
+            // Hide all media containers initially
+            imageDisplayContainer.classList.add('hidden');
+            videoDisplayContainer.classList.add('hidden');
+            audioDisplayContainer.classList.add('hidden'); // Hide audio container initially
+            questionVideo.pause(); // Pause video when switching questions
+            questionVideo.currentTime = 0; // Reset video to start
+            questionAudio.pause(); // Pause audio when switching questions
+            questionAudio.currentTime = 0; // Reset audio to start
+
+            // Always clear the question text and code snippet before loading a new question
+            document.getElementById('questionText').textContent = '';
+            document.getElementById('codeSnippet').textContent = '';
+            
+            // Set the main question text first
+            document.getElementById('questionText').textContent = question.question || question.questionText;
+
+            if (question.image) {
+                imageDisplayContainer.classList.remove('hidden');
+                imageDisplayContainer.innerHTML = `<img src="${question.image}" alt="Question Image" class="max-h-96 w-auto rounded-md shadow-lg">`;
+            } else if (question.video) {
+                videoDisplayContainer.classList.remove('hidden');
+                questionVideo.src = question.video;
+                questionVideo.load();
+            } else if (question.code) {
+                codeDisplayContainer.classList.remove('hidden');
+                document.getElementById('codeSnippet').textContent = question.code; // Display the code snippet
+            } else if (question.audio) {
+                audioDisplayContainer.classList.remove('hidden');
+                questionAudio.src = question.audio;
+                questionAudio.load();
+            } else {
+                // Default for text-only questions without media
+                imageDisplayContainer.classList.add('hidden'); 
+                videoDisplayContainer.classList.add('hidden');
+                codeDisplayContainer.classList.add('hidden');
+                audioDisplayContainer.classList.add('hidden');
+            }
+
+            document.getElementById('userAnswer').value = '';
+            document.getElementById('userAnswer').disabled = false;
+            document.getElementById('submitAnswerButton').classList.remove('hidden');
+            document.getElementById('nextButtonContainer').classList.add('hidden');
+            document.getElementById('feedbackContainer').classList.add('hidden');
+            document.getElementById('userAnswer').focus(); // Focus on input field
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                submitAnswer();
+            }
+        }
+
+        function submitAnswer() {
+            const userAnswer = document.getElementById('userAnswer').value.trim();
+            const question = questions[currentQuestionIndex];
+            const isCorrect = userAnswer.toLowerCase() === question.correct.toLowerCase();
+            
+            document.getElementById('submitAnswerButton').classList.add('hidden');
+            document.getElementById('feedbackContainer').classList.remove('hidden');
+            const feedbackTextElement = document.getElementById('feedbackText');
+            
+            if (isCorrect) {
+                score++;
+                feedbackTextElement.textContent = 'Correct!';
+                feedbackTextElement.className = 'text-green-500';
+                document.getElementById('userAnswer').disabled = true; // Disable input if correct
+                setTimeout(() => {
+                    nextQuestion();
+                }, 1000); // 1-second delay for correct answer
+            } else {
+                feedbackTextElement.innerHTML = 'Try again!';
+                feedbackTextElement.className = 'text-red-500';
+                document.getElementById('userAnswer').value = ''; // Clear input
+                document.getElementById('userAnswer').disabled = false; // Re-enable input
+                document.getElementById('submitAnswerButton').classList.remove('hidden'); // Show submit button again
+                document.getElementById('userAnswer').focus(); // Refocus input
+            }
+            
+            document.getElementById('currentScore').textContent = score;
+        }
+
+        function startQuizTimer() {
+            updateQuizTimerDisplay();
+            quizTimer = setInterval(() => {
+                quizTimeLeft--;
+                updateQuizTimerDisplay();
+                if (quizTimeLeft <= 0) {
+                    clearInterval(quizTimer);
+                    showResults(true); // Indicate that time ran out
+                }
+            }, 1000);
+        }
+
+        function updateQuizTimerDisplay() {
+            const minutes = Math.floor(quizTimeLeft / 60);
+            const seconds = quizTimeLeft % 60;
+            document.getElementById('quizTimerDisplay').textContent = 
+                `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            
+            if (currentQuestionIndex < questions.length) {
+                const questionContainer = document.getElementById('questionContainer');
+                questionContainer.classList.remove('question-enter');
+                void questionContainer.offsetWidth; 
+                questionContainer.classList.add('question-enter');
+                loadQuestion();
+            } else {
+                clearInterval(quizTimer); // Stop timer when quiz ends normally
+                showResults(false); // Quiz completed normally
+            }
+        }
+
+        function showResults(timeUp) {
+            document.getElementById('quizScreen').classList.add('hidden');
+            document.getElementById('resultsScreen').classList.remove('hidden');
+            
+            clearInterval(quizTimer); // Ensure timer is stopped
+
+            const finalScore = score;
+            const timeTaken = Math.floor((Date.now() - quizStartTime) / 1000); // Calculate time taken in seconds
+            const percentage = (finalScore / questions.length) * 100;
+            
+            document.getElementById('finalScore').textContent = finalScore;
+            document.getElementById('totalQuestionsResult').textContent = questions.length;
+            
+            let resultIcon, resultTitle, resultMessage, iconBg;
+            
+            if (timeUp) {
+                resultIcon = '⏰';
+                resultTitle = 'Time\'s Up!';
+                resultMessage = 'You ran out of time. Better luck next time!';
+                iconBg = 'bg-gradient-to-r from-red-500 to-pink-500';
+            } else if (percentage >= 80) {
+                resultIcon = '🏆';
+                resultTitle = 'Excellent!';
+                resultMessage = 'You aced this quiz! Outstanding knowledge.';
+                iconBg = 'bg-gradient-to-r from-yellow-400 to-orange-400';
+            } else if (percentage >= 60) {
+                resultIcon = '👏';
+                resultTitle = 'Well Done!';
+                resultMessage = 'Good job! You have solid knowledge.';
+                iconBg = 'bg-gradient-to-r from-green-400 to-emerald-400';
+            } else if (percentage >= 40) {
+                resultIcon = '📚';
+                resultTitle = 'Not Bad!';
+                resultMessage = 'Room for improvement, but you\'re on the right track.';
+                iconBg = 'bg-gradient-to-r from-blue-400 to-indigo-400';
+            } else {
+                resultIcon = '💪';
+                resultTitle = 'Keep Learning!';
+                resultMessage = 'Practice makes perfect. Try again!';
+                iconBg = 'bg-gradient-to-r from-purple-400 to-pink-400';
+            }
+            
+            const iconElement = document.getElementById('resultIcon');
+            iconElement.className = 'w-24 h-24 '+iconBg+' rounded-full flex items-center justify-center mx-auto mb-4';
+            iconElement.innerHTML = '<span class="text-4xl">'+resultIcon+'</span>';
+            
+            document.getElementById('resultTitle').textContent = resultTitle;
+            document.getElementById('resultMessage').textContent = resultMessage;
+
+            // Submit participant data to backend
+            submitParticipantData(participantName, participantEmail, finalScore, timeTaken);
+        }
+
+        async function submitParticipantData(name, email, finalScore, timeTaken) {
+            console.log(`Submitting Participant Name: ${name}, Email: ${email}, Score: ${finalScore}, Time Taken: ${timeTaken} seconds`);
+            try {
+                const response = await fetch('/api/participants', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name, email, score: finalScore, timeTaken: timeTaken }),
+                });
+                if (response.ok) {
+                    console.log('Participant data submitted successfully!');
+                } else {
+                    console.error('Failed to submit participant data.');
+                }
+            } catch (error) {
+                console.error('Error submitting participant data:', error);
+            }
+        }
+
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            quizTimeLeft = TOTAL_QUIZ_TIME; // Reset timer for restart
+            clearInterval(quizTimer); // Stop any running timer
+            
+            document.getElementById('resultsScreen').classList.add('hidden');
+            document.getElementById('startScreen').classList.remove('hidden');
+            document.getElementById('participantName').value = ''; // Clear name input
+            document.getElementById('participantEmail').value = ''; // Clear email input
+        }
+
+        function shareResults() {
+            const finalScore = score;
+            const percentage = Math.round((finalScore / questions.length) * 100);
+            const shareText = 'I just scored '+finalScore+'/5 ('+percentage+'%) on this Knowledge Quiz! 🧠✨';
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Quiz Results',
+                    text: shareText
+                });
+            } else {
+                // Fallback for browsers that don't support Web Share API
+                navigator.clipboard.writeText(shareText).then(() => {
+                    alert('Results copied to clipboard!');
+                }).catch(() => {
+                    alert('Your score: '+shareText);
+                });
+            }
+        }
+    </script>
+</body>
+</html>
