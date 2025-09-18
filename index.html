@@ -523,7 +523,7 @@ int main() {
         function shareResults() {
             const finalScore = score;
             const percentage = Math.round((finalScore / questions.length) * 100);
-            const shareText = 'I just scored '+finalScore+'/5 ('+percentage+'%) on this Knowledge Quiz! 🧠✨';
+            const shareText = 'I just scored '+finalScore+'/'+questions.length+' ('+percentage+'%) on this Knowledge Quiz! 🧠✨';
             
             if (navigator.share) {
                 navigator.share({
