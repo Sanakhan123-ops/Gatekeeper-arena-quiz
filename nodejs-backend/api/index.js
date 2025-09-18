@@ -28,6 +28,17 @@ app.get('/api/participants', (req, res) => {
     res.status(200).json(participants);
 });
 
+// Endpoint to get summary: name, email, and time taken (GET)
+app.get('/api/participants/summary', (req, res) => {
+    const summary = participants.map(({ name, email, timeTaken, timestamp }) => ({
+        name,
+        email,
+        timeTaken,
+        timestamp
+    }));
+    res.status(200).json(summary);
+});
+
 // // Load SSL/TLS certificates (No longer needed for Vercel)
 // const sslOptions = {
 //     key: fs.readFileSync('../key.pem'), 
