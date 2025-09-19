@@ -163,9 +163,12 @@
                 <button onclick="restartQuiz()" class="w-full bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold py-4 px-6 rounded-xl hover:from-purple-600 hover:to-blue-600 transform hover:scale-105 transition-all duration-200 shadow-lg">
                     Try Again
                 </button>
-                <button onclick="shareResults()" class="w-full bg-gray-100 text-gray-700 font-semibold py-4 px-6 rounded-xl hover:bg-gray-200 transition-all duration-200">
-                    Share Results
-                </button>
+                <a href="https://forms.gle/9w4fv7HZvX5yxDrSA" target="_blank" rel="noopener noreferrer" class="block w-full text-center bg-gray-100 text-gray-700 font-semibold py-4 px-6 rounded-xl hover:bg-gray-200 transition-all duration-200">
+                    Fill Google Form
+                </a>
+                <p id="formPrompt" class="text-sm text-gray-600">
+                    Please fill out the Google Form to complete your submission.
+                </p>
             </div>
         </div>
     </div>
@@ -482,7 +485,7 @@ int main() {
             iconElement.innerHTML = '<span class="text-4xl">'+resultIcon+'</span>';
             
             document.getElementById('resultTitle').textContent = resultTitle;
-            document.getElementById('resultMessage').textContent = resultMessage;
+            document.getElementById('resultMessage').textContent = resultMessage + ' After viewing your score, please fill out the Google Form to complete your submission.';
 
             // Submit participant data to backend
             submitParticipantData(participantName, participantEmail, finalScore, timeTaken);
@@ -520,25 +523,7 @@ int main() {
             document.getElementById('participantEmail').value = ''; // Clear email input
         }
 
-        function shareResults() {
-            const finalScore = score;
-            const percentage = Math.round((finalScore / questions.length) * 100);
-            const shareText = 'I just scored '+finalScore+'/5 ('+percentage+'%) on this Knowledge Quiz! 🧠✨';
-            
-            if (navigator.share) {
-                navigator.share({
-                    title: 'Quiz Results',
-                    text: shareText
-                });
-            } else {
-                // Fallback for browsers that don't support Web Share API
-                navigator.clipboard.writeText(shareText).then(() => {
-                    alert('Results copied to clipboard!');
-                }).catch(() => {
-                    alert('Your score: '+shareText);
-                });
-            }
-        }
+        // shareResults removed; replaced with Google Form CTA
     </script>
 </body>
 </html>
